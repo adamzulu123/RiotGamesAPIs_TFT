@@ -38,6 +38,7 @@ class DataPipeline:
                                                                                         page,
                                                                                         str(self.api_key))
 
+            #
             print("Uploading data from z... {}", division)
             response = self.make_request(url)
             data.append(response)
