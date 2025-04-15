@@ -71,6 +71,10 @@ class DataPipeline:
 
         return division_players_data
 
+
+    """
+    Function to get unique match_ids 
+    """
     def get_unique_matches_id_by_puuid(self, players_data, tier):
         matches_ids = set()  # only unique match ids
         players_count = 0
@@ -105,6 +109,121 @@ class DataPipeline:
                 print(f"Error while downloading data ... : {e}")
 
         return matches_ids
+
+
+    """
+    Function to download all data needed for analysis (raw data (json)).
+    """
+    def get_match_details(self, match_id):
+        # https://europe.api.riotgames.com/tft/match/v1/matches/EUN1_3769226704?api_key=.....
+        url = "{}/{}/match/v1/matches/{}?api_key={}".format(self.europe_base_url,
+                                                            self.game_type[0],
+                                                            match_id,
+                                                            str(self.api_key))
+        try:
+            match_data = self.make_request(url)
+            return match_data
+        except Exception as e:
+            print(f"Error while downloading data ... : {e}")
+            return None
+
+
+    """
+    Function to analyze and retrieve all necessary data for analysis. 
+    """
+    def analyze_matches(self, match_ids):
+        matches_data = []
+        players_data = []
+        traits = []
+        units = []
+        items = []
+
+        # for testing
+        matches_count = 0
+
+        for match_id in match_ids:
+            # for testing purposes
+            if matches_count >= 1:
+                break
+
+            match_data = self.get_match_details(match_id)
+            if not match_data:
+                continue
+
+            match_info = match_data['info']
+
+            # adding basic match info (this will be stored in matches table in the database).
+            match_entry = {
+                "match_id": match_id,
+                "game_datetime": match_info['game_datetime'],
+                "game_length": match_info['game_length'],
+                "mapId": match_info['mapId'],
+                "tft_set_number": match_info['tft_set_number'],
+            }
+            matches_data.append(match_entry)
+            #print(match_entry)
+
+            # now we will get info about players, traits, units and items (each will be stored separately)
+
+            for player in match_info['participants']:
+                player_entry = {
+                    "match_id": match_id,
+                    "puuid": player['puuid'],
+                    "placement": player['placement'],
+                    "level": player['level'],
+                    "gold_left": player['gold_left'],
+                    "last_round": player['last_round'],
+                    "players_eliminated": player['players_eliminated'],
+                    "time_eliminated": player['time_eliminated'],
+                    "total_damage": player['total_damage_to_players'],
+                    "companion_id": player['companion']['content_ID']
+                }
+                players_data.append(player_entry)
+                #print(player_entry)
+
+                for trait in player['traits']:
+                    trait_entry = {
+                        "match_id": match_id,
+                        "puuid": player['puuid'],
+                        "trait_name": trait['name'],
+                        "num_units": trait['num_units'],
+                        "style": trait['style'],
+                        "tier_current": trait['tier_current'],
+                        "tier_total": trait['tier_total']
+                    }
+                    traits.append(trait_entry)
+                    #print(trait_entry)
+
+                for unit in player['units']:
+                    unit_entry = {
+                        "match_id": match_id,
+                        "puuid": player['puuid'],
+                        "character_id": unit['character_id'],
+                        "rarity": unit['rarity'],
+                        "tier": unit['tier']
+                    }
+                    units.append(unit_entry)
+                    #print(unit_entry)
+                    for item_name in unit['itemNames']:
+                        item_entry = {
+                            "match_id": match_id,
+                            "puuid": player['puuid'],
+                            "character_id": unit['character_id'],
+                            "item_name": item_name
+                        }
+                        items.append(item_entry)
+                        #print(item_entry)
+
+            matches_count += 1
+
+        #return matches_data, players_data, traits, units, items
+        return {
+            "matches": matches_data,
+            "players": players_data,
+            "traits": traits,
+            "units": units,
+            "items": items
+        }
 
 
 
