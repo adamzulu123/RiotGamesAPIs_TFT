@@ -1,6 +1,9 @@
 import psycopg2
 import os
 from dotenv import load_dotenv
+from psycopg2.extras import RealDictCursor
+from contextlib import contextmanager
+import pandas as pd
 
 
 class DatabaseConnection:
@@ -23,19 +26,181 @@ class DatabaseConnection:
         self.cursor = self.conn.cursor()  # to obiekt pozwalajacy na odbieranie i wysyłanie zapytan do bazy
         # taki tunel do komunikacji z baza
 
-    def fetch_all(self, query):
-        self.cursor.execute(query)
-        return self.cursor.fetchall()
+    def __del__(self):
+        """Closing connection"""
+        if hasattr(self, 'conn') and self.conn:
+            if hasattr(self, 'cursor') and self.cursor:
+                self.cursor.close()
+            self.conn.close()
 
-    def close(self):
-        self.cursor.close()
-        self.conn.close()
+    def query(self, query, args=None, fetch_one=False):
+        with self.conn.cursor() as cursor:
+            cursor.execute(query, args)
+            return cursor.fetchone() if fetch_one else cursor.fetchall()
 
+    def execute_query(self, query, params=None):
+        try:
+            self.cursor.execute(query, params)
+            self.conn.commit()
+        except Exception as e:
+            print(f'Error while executing query: {e}')
+            self.conn.rollback()
+            raise e
 
+    # matches table operations
+    def add_match(self, match_data):
+        """Adding a new match to the database - ignoring duplicate matches"""
+        sql = """
+        INSERT INTO matches (match_id, game_datetime, game_length, map_id, tft_set_number) 
+        VALUES (%s, %s, %s, %s, %s) ON CONFLICT (match_id) DO NOTHING
+        RETURNING match_id """
 
+        params = (
+            match_data["match_id"],
+            match_data["game_datetime"],
+            match_data["game_length"],
+            match_data["mapId"],
+            match_data["tft_set_number"],
+        )
+        try:
+            self.execute_query(sql, params)
+            print("Match added successfully")
+        except Exception as e:
+            print(f'Error while adding match: {e}')
 
+    def get_match(self, match_id):
+        return self.query("SELECT * FROM matches WHERE match_id = %s", (match_id,), fetch_one=True)
 
+    def get_all_matches(self):
+        return self.query("SELECT * FROM matches")
 
+    def delete_match(self, match_id):
+        self.execute_query("DELETE FROM matches WHERE match_id = %s", (match_id,))
+        print("Match deleted successfully")
+
+    # players table - operations
+    def add_player(self, player):
+        sql = """
+        INSERT INTO players(puuid, match_id, placement, level, gold_left, last_round,
+            players_eliminated, time_eliminated, total_damage, companion_id) 
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s) 
+        ON CONFLICT (puuid, match_id) DO NOTHING
+        RETURNING puuid, match_id"""
+
+        params = (
+            player['puuid'],
+            player['match_id'],
+            player['placement'],
+            player['level'],
+            player['gold_left'],
+            player['last_round'],
+            player['players_eliminated'],
+            player['time_eliminated'],
+            player['total_damage'],
+            player['companion_id']
+        )
+
+        try:
+            self.execute_query(sql, params)
+            print("Player added successfully")
+        except Exception as e:
+            print(f'Error while adding player info: {e}')
+
+    def get_player(self, puuid):
+        self.query("SELECT * FROM players WHERE puuid = %s", (puuid,), fetch_one=True)
+
+    def get_all_players(self):
+        return self.query("SELECT * FROM players")
+
+    def delete_player(self, puuid):
+        self.execute_query("DELETE FROM players WHERE puuid = %s", (puuid,))
+
+    # traits table operations
+    def add_traits(self, traits):
+        sql = """
+            INSERT INTO traits (match_id, puuid, trait_name, num_units, style, tier_current, tier_total) 
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            """
+
+        params = (
+            traits['match_id'],
+            traits['puuid'],
+            traits['trait_name'],
+            traits['num_units'],
+            traits['style'],
+            traits['tier_current'],
+            traits['tier_total']
+        )
+
+        try:
+            self.execute_query(sql, params)
+            print("Trait added successfully")
+        except Exception as e:
+            print(f'Error while adding trait info: {e}')
+
+    def get_traits(self, puuid):
+        return self.query("SELECT * FROM traits WHERE puuid = %s", (puuid,))
+
+    def get_all_traits(self):
+        return self.query("SELECT * FROM traits")
+
+    def delete_traits(self, puuid):
+        self.execute_query("DELETE FROM traits WHERE puuid = %s", (puuid,))
+
+    # units table operations
+    def add_unit(self, unit):
+        sql = """
+        INSERT INTO units (match_id, puuid, character_id, rarity, tier)
+        VALUES (%s, %s, %s, %s, %s)
+        """
+        params = (
+            unit["match_id"],
+            unit["puuid"],
+            unit["character_id"],
+            unit["rarity"],
+            unit["tier"],
+        )
+        try:
+            self.execute_query(sql, params)
+            print("Unit added successfully")
+        except Exception as e:
+            print(f'Error while adding unit: {e}')
+
+    def get_units(self, puuid):
+        return self.query("SELECT * FROM units WHERE puuid = %s", (puuid,))
+
+    def get_all_units(self):
+        return self.query("SELECT * FROM units")
+
+    def delete_units(self, puuid):
+        self.execute_query("DELETE FROM units WHERE puuid = %s", (puuid,))
+
+    # items table operations
+    def add_item(self, item):
+        sql = """
+        INSERT INTO items (match_id, puuid, character_id, item_id)
+        VALUES (%s, %s, %s, %s)
+        """
+        params = (
+            item["match_id"],
+            item["puuid"],
+            item["character_id"],
+            item["item_id"],
+        )
+        try:
+            self.execute_query(sql, params)
+            print("Item added successfully")
+        except Exception as e:
+            print(f'Error while adding item: {e}')
+
+    def get_items(self, puuid):
+        return self.query("SELECT * FROM items WHERE puuid = %s", (puuid,))
+
+    def get_all_items(self):
+        return self.query("SELECT * FROM items")
+
+    def delete_items(self, puuid):
+        self.execute_query("DELETE FROM items WHERE puuid = %s", (puuid,))
 
 
 

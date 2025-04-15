@@ -209,7 +209,7 @@ class DataPipeline:
                             "match_id": match_id,
                             "puuid": player['puuid'],
                             "character_id": unit['character_id'],
-                            "item_name": item_name
+                            "item_id": item_name
                         }
                         items.append(item_entry)
                         #print(item_entry)
