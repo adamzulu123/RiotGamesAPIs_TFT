@@ -9,10 +9,11 @@ if __name__ == "__main__":
     pipeline = DataPipeline(dotenv_path)
 
     try:
-        results = pipeline.get_matches_by_tier("DIAMOND")
+        results = pipeline.get_players_by_tier("DIAMOND")
+        match_ids = pipeline.get_unique_matches_id_by_puuid(results, "DIAMOND")
 
-        for result in results:
-            print(result)
+        for match_id in match_ids:
+            print(match_id)
 
     except Exception as e:
         print(f"Błąd: {e}")
