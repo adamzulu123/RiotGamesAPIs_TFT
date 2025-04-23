@@ -55,6 +55,14 @@ CREATE TABLE IF NOT EXISTS items (
     FOREIGN KEY (puuid, match_id) REFERENCES players(puuid, match_id) ON DELETE CASCADE
 );
 
+ALTER TABLE players
+ADD COLUMN tier VARCHAR(50),
+ADD COLUMN division VARCHAR(10);
+
+ALTER TABLE players
+ADD COLUMN leaguePoints INT,
+ADD COLUMN wins INT,
+ADD COLUMN losses INT;
 
 
 

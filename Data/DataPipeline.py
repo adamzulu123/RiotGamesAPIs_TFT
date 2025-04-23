@@ -110,9 +110,27 @@ class DataPipeline:
 
         return matches_ids
 
+    """
+    Function to get players
+    """
+    def get_players_info(self, player_puuid):
+        #https://eun1.api.riotgames.com/tft/league/v1/by-puuid/....
+        url = "{}/{}/league/v1/by-puuid/{}?api_key={}".format(self.eune_base_url,
+                                                              self.game_type[0],
+                                                              player_puuid,
+                                                              self.api_key)
+        try:
+            player_info = self.make_request(url)
+            if isinstance(player_info, list) and player_info:
+                return player_info[0]
+            return player_info
+        except Exception as e:
+            print(f"Error while downloading data ... : {e}")
+            return None
+
 
     """
-    Function to download all data needed for analysis (raw data (json)).
+    Function to download all data about matches needed for analysis (raw data (json)).
     """
     def get_match_details(self, match_id):
         # https://europe.api.riotgames.com/tft/match/v1/matches/EUN1_3769226704?api_key=.....
@@ -166,6 +184,8 @@ class DataPipeline:
             # now we will get info about players, traits, units and items (each will be stored separately)
 
             for player in match_info['participants']:
+                playerInfo = self.get_players_info(player['puuid'])
+
                 player_entry = {
                     "match_id": match_id,
                     "puuid": player['puuid'],
@@ -176,7 +196,12 @@ class DataPipeline:
                     "players_eliminated": player['players_eliminated'],
                     "time_eliminated": player['time_eliminated'],
                     "total_damage": player['total_damage_to_players'],
-                    "companion_id": player['companion']['content_ID']
+                    "companion_id": player['companion']['content_ID'],
+                    "tier": playerInfo['tier'],
+                    "division": playerInfo['rank'],
+                    "leaguePoints": playerInfo['leaguePoints'],
+                    "wins": playerInfo['wins'],
+                    "losses": playerInfo['losses']
                 }
                 players_data.append(player_entry)
                 #print(player_entry)
