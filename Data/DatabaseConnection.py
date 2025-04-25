@@ -82,8 +82,8 @@ class DatabaseConnection:
     def add_player(self, player):
         sql = """
         INSERT INTO players(puuid, match_id, placement, level, gold_left, last_round,
-            players_eliminated, time_eliminated, total_damage, companion_id) 
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s) 
+            players_eliminated, time_eliminated, total_damage, companion_id, tier, division, leaguePoints, wins, losses) 
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) 
         ON CONFLICT (puuid, match_id) DO NOTHING
         RETURNING puuid, match_id"""
 
@@ -97,7 +97,12 @@ class DatabaseConnection:
             player['players_eliminated'],
             player['time_eliminated'],
             player['total_damage'],
-            player['companion_id']
+            player['companion_id'],
+            player['tier'],
+            player['division'],
+            player['leaguePoints'],
+            player['wins'],
+            player['losses']
         )
 
         try:
