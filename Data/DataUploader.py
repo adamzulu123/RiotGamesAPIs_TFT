@@ -36,20 +36,34 @@ if __name__ == "__main__":
     db = DatabaseConnection(dotenv_path)
 
     try:
-        pipeline.collect_balanced_dataset()
+        analyzed_matches_data = pipeline.collect_balanced_dataset()
+
+        # todo: save all matches data into a database, collecting info from API works correctly
 
 
 
-        # results = pipeline.get_players_by_tier("DIAMOND")
-        # match_ids = pipeline.get_unique_matches_id_by_puuid(results, "DIAMOND")
-        # match_data = pipeline.analyze_matches(["EUN1_3771287739"])
-        # for player in match_data.get("players", []):
-        #     print(player)
-        #
-        #
-        # db = DatabaseConnection(dotenv_path)
-        # print("Connecting to database...")
-        # print("ok")
+        # for key in match_data:
+        #     values = match_data[key]
+        #     if values:
+        #         print(f"Pierwszy element w '{key}':")
+        #         print(values[0])
+        #         print("-" * 50)
+        #     else:
+        #         print(f"Brak danych w '{key}'")
+
+
+
+
+    # results = pipeline.get_players_by_tier("DIAMOND")
+    # match_ids = pipeline.get_unique_matches_id_by_puuid(results, "DIAMOND")
+    # match_data = pipeline.analyze_matches(["EUN1_3771287739"])
+    # for player in match_data.get("players", []):
+    #     print(player)
+    #
+    #
+    # db = DatabaseConnection(dotenv_path)
+    # print("Connecting to database...")
+    # print("ok")
 
     except Exception as e:
         print(f"Błąd: {e}")

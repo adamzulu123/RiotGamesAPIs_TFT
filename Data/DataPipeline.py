@@ -25,7 +25,6 @@ class DataPipeline:
         self.requests_per_sec = 0
         self.last_request_time = time.time()
 
-
     def make_request(self, url):
         response = requests.get(url)
         if response.status_code != 200:
@@ -37,6 +36,7 @@ class DataPipeline:
     This Function will be used to count requests done and if we've done more then 20 in sec, or 95 i minute, 
     then sleep for 1 min and then continue to work normally.
     """
+
     def rate_limited_requests(self, url):
         # max 20 per sec
         current_time = time.time()
@@ -60,7 +60,6 @@ class DataPipeline:
         self.last_request_time = time.time()
         return self.make_request(url)
 
-
     """
     This function retrieves basic player data for each rank, including: puuid, tier, division, wins, and losses.
     Important note: according to Riot's API, a 'win' only refers to a 1st place finish, 
@@ -77,42 +76,42 @@ class DataPipeline:
         division_players_data = []
         for division in self.divisions:
             #for page in range(1, 2):
-                url = "{}/{}/league/v1/entries/{}/{}?queue={}&page={}&api_key={}".format(self.eune_base_url,
-                                                                                         self.game_type[0],
-                                                                                         tier,
-                                                                                         division,
-                                                                                         self.queue_tft,
-                                                                                         1,
-                                                                                         str(self.api_key))
+            url = "{}/{}/league/v1/entries/{}/{}?queue={}&page={}&api_key={}".format(self.eune_base_url,
+                                                                                     self.game_type[0],
+                                                                                     tier,
+                                                                                     division,
+                                                                                     self.queue_tft,
+                                                                                     1,
+                                                                                     str(self.api_key))
 
-                try:
-                    #response = self.make_request(url)
-                    response = self.rate_limited_requests(url)
-                    for player in response[:player_per_division]:
-                        player_data = {
-                            'puuid': player.get('puuid'),
-                            'tier': player.get('tier'),
-                            'division': player.get('rank'),
-                            'wins': player.get('wins'),
-                            'losses': player.get('losses'),
-                        }
-                        division_players_data.append(player_data)
+            try:
+                #response = self.make_request(url)
+                response = self.rate_limited_requests(url)
+                for player in response[:player_per_division]:
+                    player_data = {
+                        'puuid': player.get('puuid'),
+                        'tier': player.get('tier'),
+                        'division': player.get('rank'),
+                        'wins': player.get('wins'),
+                        'losses': player.get('losses'),
+                    }
+                    division_players_data.append(player_data)
 
-                    print("Collected data about players from {} {}", tier, division)
+                print("Collected data about players from {} {}", tier, division)
 
-                    #If page is empty the next one will also be empty
-                    if len(response) == 0:
-                        break
+                #If page is empty the next one will also be empty
+                if len(response) == 0:
+                    break
 
-                except Exception as e:
-                    print(f"Error while downloading data ... : {e}")
+            except Exception as e:
+                print(f"Error while downloading data ... : {e}")
 
         return division_players_data
-
 
     """
     Function to get unique match_ids 
     """
+
     def get_unique_matches_id_by_puuid(self, players_data, tier, matches_per_player):
         matches_ids = set()  # only unique match ids
 
@@ -141,31 +140,27 @@ class DataPipeline:
 
 
 
-
-
-    # do testów narazie, bo docelowo pobieramy mecze unikalne z każdej rank, bo niektóre moga sie powtórzyc jak
-    # jacys gracze grali razem czy cos, i potem bedzie analyze_match() gdzie pobieerzemy wszystkie dane na temat meczu
+    """
+    Colectting all matches_ids which we will use later for the analysis
+    """
     def collect_balanced_dataset(self):
         all_match_ids = set()
-        #tier = "BRONZE"
-        for tier in self.tiers[:3]:
+
+        # [:1] - if we want to iterate through only some tiers
+        for tier in self.tiers:
             players = self.get_players_by_tier(tier, 25)
 
             tier_match_ids = self.get_unique_matches_id_by_puuid(players, tier, matches_per_player=4)
             all_match_ids.update(tier_match_ids)
 
             print(f"Collected {len(tier_match_ids)} unique ID from {tier}")
-            print("Sleeping for extra 1 min")
-            time.sleep(60)
+            # time.sleep(60) // no sleep need cuz always after 95 request we are sleeping for more than 120s
 
-        print(f"Unique matches collected combined: {len(all_match_ids)} ")
-        return all_match_ids
+        # after collecting all ids we just use analyze_matches to retrieve all required information
+        analyzed_matches = self.analyze_matches(all_match_ids)
+        print(f"Analyzed matches: {len(analyzed_matches)}")
 
-
-
-
-
-
+        return analyzed_matches
 
 
 
@@ -193,10 +188,10 @@ class DataPipeline:
             print(f"Error while downloading data ... : {e}")
             return None
 
-
     """
     Function to download all data about matches needed for analysis (raw data (json)).
     """
+
     def get_match_details(self, match_id):
         # https://europe.api.riotgames.com/tft/match/v1/matches/EUN1_3769226704?api_key=.....
         url = "{}/{}/match/v1/matches/{}?api_key={}".format(self.europe_base_url,
@@ -211,10 +206,10 @@ class DataPipeline:
             print(f"Error while downloading data ... : {e}")
             return None
 
-
     """
     Function to analyze and retrieve all necessary data for analysis. 
     """
+
     def analyze_matches(self, match_ids):
         matches_data = []
         players_data = []
@@ -245,7 +240,6 @@ class DataPipeline:
                 "tft_set_number": match_info['tft_set_number'],
             }
             matches_data.append(match_entry)
-            #print(match_entry)
 
             # now we will get info about players, traits, units and items (each will be stored separately)
             for player in match_info['participants']:
@@ -281,10 +275,10 @@ class DataPipeline:
                                 "wins": playerInfo.get('wins', 0),
                                 "losses": playerInfo.get('losses', 0)
                             })
-                            print(
-                                f"Added ranked data for player {player['puuid']}: {playerInfo['tier']} {playerInfo['rank']}")
+                            # print(
+                            #     f"Added ranked data for player {player['puuid']}: {playerInfo['tier']} {playerInfo['rank']}")
                         else:
-                            print(f"Player {player['puuid']} has no tier/rank info")
+                            # print(f"Player {player['puuid']} has no tier/rank info")
 
                             player_entry.update({
                                 "tier": "UNRANKED",
@@ -294,7 +288,7 @@ class DataPipeline:
                                 "losses": 0
                             })
                     else:
-                        print(f"No details for player {player['puuid']}")
+                        # print(f"No details for player {player['puuid']}")
                         player_entry.update({
                             "tier": "UNRANKED",
                             "division": "NONE",
@@ -359,19 +353,5 @@ class DataPipeline:
             "units": units,
             "items": items
         }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 #
