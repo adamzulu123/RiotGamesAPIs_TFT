@@ -140,27 +140,28 @@ class DataPipeline:
 
 
 
+
+
     """
-    Colectting all matches_ids which we will use later for the analysis
+    Collecting all match data from each tier - used in DataUploader class
     """
-    def collect_balanced_dataset(self):
+    def collect_data_from_tier(self, players_per_division, matches_per_player, tier):
         all_match_ids = set()
 
-        # [:1] - if we want to iterate through only some tiers
-        for tier in self.tiers:
-            players = self.get_players_by_tier(tier, 25)
+        players = self.get_players_by_tier(tier, players_per_division)
 
-            tier_match_ids = self.get_unique_matches_id_by_puuid(players, tier, matches_per_player=4)
-            all_match_ids.update(tier_match_ids)
+        tier_match_ids = self.get_unique_matches_id_by_puuid(players, tier, matches_per_player)
+        all_match_ids.update(tier_match_ids)
 
-            print(f"Collected {len(tier_match_ids)} unique ID from {tier}")
-            # time.sleep(60) // no sleep need cuz always after 95 request we are sleeping for more than 120s
+        print(f"Collected {len(tier_match_ids)} unique ID from {tier}")
 
         # after collecting all ids we just use analyze_matches to retrieve all required information
         analyzed_matches = self.analyze_matches(all_match_ids)
         print(f"Analyzed matches: {len(analyzed_matches)}")
 
         return analyzed_matches
+
+
 
 
 
@@ -218,12 +219,12 @@ class DataPipeline:
         items = []
 
         # for testing
-        matches_count = 0
+        # matches_count = 0
 
         for match_id in match_ids:
             # for testing purposes
-            if matches_count >= 5:
-                break
+            # if matches_count >= 5:
+            #     break
 
             match_data = self.get_match_details(match_id)
             if not match_data:
@@ -298,7 +299,7 @@ class DataPipeline:
                         })
 
                     players_data.append(player_entry)
-                    print(f"Added player data for {player['puuid']}")
+                    # print(f"Added player data for {player['puuid']}")
 
                     for trait in player['traits']:
                         try:
@@ -343,7 +344,7 @@ class DataPipeline:
                     print(f"Error processing player {player.get('puuid', 'unknown')} in match {match_id}: {e}")
                     continue
 
-            matches_count += 1
+            # matches_count += 1
 
         #return matches_data, players_data, traits, units, items
         return {

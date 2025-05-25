@@ -64,6 +64,15 @@ ADD COLUMN leaguePoints INT,
 ADD COLUMN wins INT,
 ADD COLUMN losses INT;
 
+-- adding constraint because we need to have unique values in those columns too - this is necessary for data accuracy
+-- if we are constantly retrieving data from the api, but in our case where we want to just store data,
+-- that we once get and then use it for the analysis it's not crucial.
+-- we have only 1gb storage and those indexes contains a lot of memory
+ALTER TABLE traits ADD CONSTRAINT unique_trait UNIQUE (match_id, puuid, trait_name);
+ALTER TABLE units ADD CONSTRAINT unique_unit UNIQUE (match_id, puuid, character_id);
+ALTER TABLE items ADD CONSTRAINT unique_item UNIQUE (match_id, puuid, character_id, item_id);
+
+
 
 
 

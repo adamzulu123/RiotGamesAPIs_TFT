@@ -1,32 +1,25 @@
 import os
 import sys
+import time
+
 from Data.DataPipeline import DataPipeline
 from Data.DatabaseConnection import DatabaseConnection
 
 
-def get_and_save_api_info(pipeline, db, tier):
-    print("Collecting data about player and matches from {}", tier)
-    players_for_tier = pipeline.get_players_by_tier(tier)
-    matches_ids = pipeline.get_unique_matches_id_by_puuid(players_for_tier, tier)
-    match_data = pipeline.analyze_matches(matches_ids)
+def save_to_db_api_info(matches_data):
+    print("Saving data to database...")
 
-    # save to database
-    for match in match_data["matches"]:
-        db.add_match(match)
+    try:
+        db.add_matches_bulk(matches_data["matches"])
+        db.add_players_bulk(matches_data["players"])
+        db.add_traits_bulk(matches_data["traits"])
+        db.add_units_bulk(matches_data["units"])
+        db.add_items_bulk(matches_data["items"])
 
-    for player in match_data["players"]:
-        db.add_player(player)
+        print("Done! Everything saved successfully!")
 
-    for trait in match_data["traits"]:
-        db.add_traits(trait)
-
-    for unit in match_data["units"]:
-        db.add_unit(unit)
-
-    for item in match_data["items"]:
-        db.add_item(item)
-
-    print("Finished collecting data about players and matches from {}", tier)
+    except Exception as e:
+        print("Error while saving to the database", e)
 
 
 if __name__ == "__main__":
@@ -36,34 +29,14 @@ if __name__ == "__main__":
     db = DatabaseConnection(dotenv_path)
 
     try:
-        analyzed_matches_data = pipeline.collect_balanced_dataset()
-
-        # todo: save all matches data into a database, collecting info from API works correctly
-
-
-
-        # for key in match_data:
-        #     values = match_data[key]
-        #     if values:
-        #         print(f"Pierwszy element w '{key}':")
-        #         print(values[0])
-        #         print("-" * 50)
-        #     else:
-        #         print(f"Brak danych w '{key}'")
+        # adding matches from every tier and division to the database - synchronously (maybe update in the future)
+        #todo: collect at least 100 matches from every tier --> need time to execute all of that ;))
+        for tier in pipeline.tiers:
+            analyzed_matches_data = pipeline.collect_data_from_tier(1, 1, tier)
+            save_to_db_api_info(analyzed_matches_data)
 
 
-
-
-    # results = pipeline.get_players_by_tier("DIAMOND")
-    # match_ids = pipeline.get_unique_matches_id_by_puuid(results, "DIAMOND")
-    # match_data = pipeline.analyze_matches(["EUN1_3771287739"])
-    # for player in match_data.get("players", []):
-    #     print(player)
-    #
-    #
-    # db = DatabaseConnection(dotenv_path)
-    # print("Connecting to database...")
-    # print("ok")
+        print("Data saved successfully!")
 
     except Exception as e:
         print(f"Błąd: {e}")
