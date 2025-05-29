@@ -50,24 +50,28 @@ class DatabaseConnection:
 
     # todo: tutaj trzeba bedzie optymalnie jakoś co jakiś czas sprawdzac stan połaczenia
 
-    # def ensure_connection(self):
-    #     try:
-    #         self.conn.cursor().execute("SELECT 1")
-    #     except (psycopg2.InterfaceError, psycopg2.OperationalError):
-    #         print("Reconnecting to database...")
-    #         self.reconnect()
-    #
-    # def reconnect(self):
-    #     self.conn.close()
-    #     self.conn = psycopg2.connect(
-    #         database=os.getenv('PG_DB_DATABASE'),
-    #         user=os.getenv('PG_DB_USER'),
-    #         password=os.getenv('PG_DB_PASSWORD'),
-    #         host=os.getenv('PG_DB_HOST'),
-    #         port=os.getenv('PG_DB_PORT'),
-    #         sslmode="require"
-    #     )
+    def ensure_connection(self):
+        try:
+            with self.conn.cursor() as cursor:
+                cursor.execute("SELECT 1")
+        except (psycopg2.InterfaceError, psycopg2.OperationalError):
+            print("Reconnecting to database...")
+            self.reconnect()
 
+    def reconnect(self):
+        try:
+            if self.conn:
+                self.conn.close()
+        except Exception:
+            pass
+        self.conn = psycopg2.connect(
+            database=os.getenv('PG_DB_DATABASE'),
+            user=os.getenv('PG_DB_USER'),
+            password=os.getenv('PG_DB_PASSWORD'),
+            host=os.getenv('PG_DB_HOST'),
+            port=os.getenv('PG_DB_PORT'),
+            sslmode="require"
+        )
     # matches table operations
     def add_match(self, match_data):
         """Adding a new match to the database - ignoring duplicate matches"""
@@ -232,6 +236,7 @@ class DatabaseConnection:
 
     # bulk insert - czyli to co używamy podczas pobierania danych z api bo jest dużo szybciej
     def execute_bulk(self, sql, values):
+        self.ensure_connection()
         with self.conn.cursor() as cursor:
             cursor.executemany(sql, values)
         self.conn.commit()

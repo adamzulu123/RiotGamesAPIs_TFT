@@ -16,7 +16,7 @@ class DataPipeline:
         self.queue_tft = "RANKED_TFT"
 
         #needed TFT-LEAGUE-V1
-        self.tiers = ["IRON", "BRONZE", "SILVER", "GOLD", "PLATINUM", "DIAMOND"]
+        self.tiers = ["IRON", "BRONZE", "SILVER", "GOLD", "PLATINUM", "EMERALD", "DIAMOND"]
         self.divisions = ['I', 'II', 'III', 'IV']
 
         #we have only 100 request per minute and 20 per sec.
@@ -47,15 +47,18 @@ class DataPipeline:
         # max 100 (95) every 2 minutes
         self.api_requests_made += 1
         if self.api_requests_made >= 95:
-            elapsed_time = time.time() - self.start_time
-            if elapsed_time < 120:
-                sleep_time = 120 - elapsed_time + 30  # +30s for safety,
-                print(f"Done 95 requests. Sleeping for {sleep_time} seconds")
-                time.sleep(sleep_time)
-
-            # reset counters after sleeping
+            # elapsed_time = time.time() - self.start_time
+            # if elapsed_time < 120:
+            #     sleep_time = 120 - elapsed_time + 30  # +30s for safety,
+            #     print(f"Done 95 requests. Sleeping for {sleep_time} seconds")
+            #     time.sleep(sleep_time)
+            #
+            # # reset counters after sleeping
+            # self.api_requests_made = 0
+            # self.start_time = time.time()
+            print("Done 95 requests. Sleeping for 130 seconds.") #always sleep for 130s
+            time.sleep(130)
             self.api_requests_made = 0
-            self.start_time = time.time()
 
         self.last_request_time = time.time()
         return self.make_request(url)

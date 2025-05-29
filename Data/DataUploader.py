@@ -31,8 +31,9 @@ if __name__ == "__main__":
     try:
         # adding matches from every tier and division to the database - synchronously (maybe update in the future)
         #todo: collect at least 100 matches from every tier --> need time to execute all of that ;))
-        for tier in pipeline.tiers:
-            analyzed_matches_data = pipeline.collect_data_from_tier(1, 1, tier)
+        #for tier in pipeline.tiers[1:]:
+        for tier in ["EMERALD"]:
+            analyzed_matches_data = pipeline.collect_data_from_tier(4, 2, tier)
             save_to_db_api_info(analyzed_matches_data)
 
 
