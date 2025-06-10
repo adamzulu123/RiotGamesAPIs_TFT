@@ -84,7 +84,7 @@ class DataPipeline:
                                                                                      tier,
                                                                                      division,
                                                                                      self.queue_tft,
-                                                                                     1,
+                                                                                     2,
                                                                                      str(self.api_key))
 
             try:
