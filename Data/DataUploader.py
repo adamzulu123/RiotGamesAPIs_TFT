@@ -29,11 +29,8 @@ if __name__ == "__main__":
     db = DatabaseConnection(dotenv_path)
 
     try:
-        # adding matches from every tier and division to the database - synchronously (maybe update in the future)
-        #todo: collect at least 100 matches from every tier --> need time to execute all of that ;))
-        #for tier in pipeline.tiers[1:]:
-        for tier in ["DIAMOND"]:
-            analyzed_matches_data = pipeline.collect_data_from_tier(5, 2, tier)
+        for tier in pipeline.tiers:
+            analyzed_matches_data = pipeline.collect_data_from_tier(10, 1, tier)
             save_to_db_api_info(analyzed_matches_data)
 
 
