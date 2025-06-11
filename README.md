@@ -1,7 +1,7 @@
-# 🧠 RiotGamesAPIs_TFT
+# RiotGamesAPIs_TFT
 
 Projekt, którego celem jest wizualizacja danych na temat gry TFT od Riot Games. 
-
+Gotowe notebooki z wizualizacją najważniejszych dla nas danych dostępne są w projekcie, w folderze 'Notebooks'.
 ---
 
 ## 🔧 Wymagania wstępne
@@ -21,12 +21,12 @@ Potrzebna jest baza PostgreSQL, np. w chmurze:
 W katalogu głównym projektu utwórz plik `.env` z następującymi danymi:
 
 ```env
-RIOT_API_KEY=tu_wstaw_swoj_klucz
-DB_HOST=tu_wstaw_host
-DB_PORT=5432
-DB_NAME=tu_wstaw_nazwe_bazy
-DB_USER=twoja_nazwa_uzytkownika
-DB_PASSWORD=twoje_haslo
+RIOT_GAMES_KEY=twoj_klucz
+PG_DB_PASSWORD=hasło_do_bazy
+PG_DB_USER=nazwa_usera
+PG_DB_DATABASE=nazwa_bazy
+PG_DB_HOST=host
+PG_DB_PORT=port
 ```
 
 ```bash
@@ -49,7 +49,28 @@ conda activate pythonProject
 * Ustaw interpreter Conda: pythonProject
 
 ---
-W celu zmiany sposobu pobierania danych lub ich uruchamiania zaleca się modyfikację klasy DataUploader lub bezpośrednie jej uruchomienie.
+
+## Pobieranie danych i analiza
+
+Możesz pobrać dane lub skorzystać z gotowych notebooków i na ich podstawie wyciągnać wnioski. 
+
+### Utwórz schemat bazy danych:
+Skorzystaj z gotowego pliku **init_db.sql**, aby zainicjować cały schemat bazy danych, która jest kluczowym elementem przechowywania danych oraz ich późniejszej analizy. 
+
+### Pobieranie danych
+
+Aby pobrać dane z API i zapisać je do bazy danych PostgreSQL:
+
+1. Upewnij się, że masz poprawnie skonfigurowany plik `.env` oraz aktywne środowisko Conda.
+2. Uruchom plik `DataUploader.py`, który odpowiada za (razem z DatabaseConnection.py oraz DataPipeline):
+   - pobieranie danych z Riot API,
+   - hurtowy zapis danych do bazy danych (tzw. bulk insert).
+---
+
+### Praca z notebookami
+Po zapisaniu danych do bazy możesz analizować je za pomocą plików .ipynb (Jupyter Notebook).
+
+
 
 
 
